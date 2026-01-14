@@ -3,8 +3,10 @@ name: Create Tag on Master Merge
 on:
   push:
     branches:
-      - master
       - main
+
+permissions:
+  contents: write
 
 jobs:
   create-tag:
@@ -15,6 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get version from package.json
         id: package-version
@@ -34,7 +37,26 @@ jobs:
       - name: Create and push tag
         if: steps.tag-check.outputs.exists == 'false'
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
           git tag "v${{ steps.package-version.outputs.version }}"
           git push origin "v${{ steps.package-version.outputs.version }}"
+
+      - name: Create GitHub release
+        if: steps.tag-check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.package-version.outputs.version }}
+          name: Release v${{ steps.package-version.outputs.version }}
+          body: |
+            ## My Web Helper v${{ steps.package-version.outputs.version }}
+
+            ### What's New
+            - Automatic release from master branch merge
+            - Version: ${{ steps.package-version.outputs.version }}
+
+            ### Installation
+            Download the extension ZIP file from the assets below and install manually, or find it on the Chrome Web Store.
+
+          draft: false
+          prerelease: false
