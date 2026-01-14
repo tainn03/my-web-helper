@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useApiKey } from '../hooks/useApiKey';
+import { useState } from "react";
+import { useApiKey } from "../hooks/useApiKey";
 
 interface ApiKeyFormProps {
   onSuccess?: () => void;
@@ -21,7 +21,7 @@ export function ApiKeyForm({ onSuccess }: ApiKeyFormProps) {
       // Force reload để App.tsx nhận được key mới
       window.location.reload();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra');
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra");
     } finally {
       setIsSubmitting(false);
     }
@@ -53,14 +53,18 @@ export function ApiKeyForm({ onSuccess }: ApiKeyFormProps) {
         {error && <div className="error-message">{error}</div>}
 
         <button type="submit" disabled={isSubmitting || !apiKey.trim()}>
-          {isSubmitting ? 'Đang lưu...' : 'Lưu & Mở Chat'}
+          {isSubmitting ? "Đang lưu..." : "Lưu & Mở Chat"}
         </button>
       </form>
 
       <div className="api-key-help">
         <p>
-          Chưa có API Key?{' '}
-          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">
+          Chưa có API Key?{" "}
+          <a
+            href="https://platform.openai.com/api-keys"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Lấy ở đây
           </a>
         </p>

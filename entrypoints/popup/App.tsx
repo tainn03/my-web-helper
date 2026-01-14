@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { useApiKey } from './hooks/useApiKey';
-import { ApiKeyForm } from './components/ApiKeyForm';
-import { ChatInterface } from './components/ChatInterface';
-import './App.css';
+import { useState } from "react";
+import { useApiKey } from "./hooks/useApiKey";
+import { ApiKeyForm } from "./components/ApiKeyForm";
+import { ChatInterface } from "./components/ChatInterface";
+import "./App.css";
 
 function App() {
   const { savedKey, clearApiKey, isLoading } = useApiKey();
@@ -37,13 +37,18 @@ function App() {
             <div className="setting-item">
               <label>API Key hiện tại</label>
               <div className="api-key-display">
-                <span>{savedKey.slice(0, 7)}...{savedKey.slice(-4)}</span>
+                <span>
+                  {savedKey.slice(0, 7)}...{savedKey.slice(-4)}
+                </span>
               </div>
             </div>
-            <button className="danger-btn" onClick={async () => {
-              await clearApiKey();
-              setShowSettings(false);
-            }}>
+            <button
+              className="danger-btn"
+              onClick={async () => {
+                await clearApiKey();
+                setShowSettings(false);
+              }}
+            >
               🗑️ Xóa API Key
             </button>
           </div>
@@ -58,9 +63,9 @@ function App() {
   // Main chat interface với OpenAI
   return (
     <div className="app-container">
-      <ChatInterface 
-        apiKey={savedKey} 
-        onSettingsClick={() => setShowSettings(true)} 
+      <ChatInterface
+        apiKey={savedKey}
+        onSettingsClick={() => setShowSettings(true)}
       />
     </div>
   );
