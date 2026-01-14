@@ -2,7 +2,7 @@
   "name": "my-web-helper",
   "description": "Chrome Extension chat AI với OpenAI - Đọc và tương tác với trang web",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -11,7 +11,7 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
-    "zip:source": "git archive --format=zip --output=.output/my-web-helper-1.0.0-source.zip HEAD",
+    "zip:source": "git archive --format=zip --output=.output/my-web-helper-1.0.1-source.zip HEAD",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },
