@@ -63,13 +63,4 @@ npm run zip
 npm run zip:source
 ```
 
-## 🤖 CI/CD
-
-Dự án sử dụng GitHub Actions để tự động hóa quá trình release:
-
-- **Tự động tạo tag**: Khi merge code vào branch `master`, sẽ tự động tạo tag và release mới
-- **Tự động build ZIP**: Khi publish release, sẽ tự động build và upload file ZIP extension
-
-Xem chi tiết tại [`.github/workflows/`](.github/workflows/)
-
 ⭐ **Nếu bạn thấy hữu ích, hãy cho chúng tôi một ngôi sao!**
