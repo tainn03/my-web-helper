@@ -58,6 +58,9 @@ npm run build
 
 # Tạo ZIP để deploy
 npm run zip
+
+# Tạo source code ZIP
+npm run zip:source
 ```
 
 ⭐ **Nếu bạn thấy hữu ích, hãy cho chúng tôi một ngôi sao!**

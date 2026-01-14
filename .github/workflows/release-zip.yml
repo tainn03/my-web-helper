@@ -1,0 +1,59 @@
+name: Build and Release ZIP
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build extension
+      run: npm run build
+
+    - name: Create ZIP file
+      run: npm run zip
+
+    - name: Create source code ZIP
+      run: npm run zip:source
+
+    - name: Get package info
+      id: package-info
+      run: |
+        NAME=$(node -p "require('./package.json').name")
+        VERSION=$(node -p "require('./package.json').version")
+        echo "name=$NAME" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Upload ZIP to release
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./.output/${{ steps.package-info.outputs.name }}-${{ steps.package-info.outputs.version }}-chrome.zip
+        asset_name: ${{ steps.package-info.outputs.name }}-${{ steps.package-info.outputs.version }}-chrome.zip
+        asset_content_type: application/zip
+
+    - name: Upload source code ZIP
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./.output/${{ steps.package-info.outputs.name }}-${{ steps.package-info.outputs.version }}-source.zip
+        asset_name: ${{ steps.package-info.outputs.name }}-${{ steps.package-info.outputs.version }}-source.zip
+        asset_content_type: application/zip
