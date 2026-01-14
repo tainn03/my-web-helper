@@ -41,22 +41,3 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git tag "v${{ steps.package-version.outputs.version }}"
           git push origin "v${{ steps.package-version.outputs.version }}"
-
-      - name: Create GitHub release
-        if: steps.tag-check.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.package-version.outputs.version }}
-          name: Release v${{ steps.package-version.outputs.version }}
-          body: |
-            ## My Web Helper v${{ steps.package-version.outputs.version }}
-
-            ### What's New
-            - Automatic release from master branch merge
-            - Version: ${{ steps.package-version.outputs.version }}
-
-            ### Installation
-            Download the extension ZIP file from the assets below and install manually, or find it on the Chrome Web Store.
-
-          draft: false
-          prerelease: false
