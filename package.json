@@ -11,6 +11,7 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
+    "zip:source": "git archive --format=zip --output=.output/my-web-helper-1.0.0-source.zip HEAD",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },
