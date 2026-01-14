@@ -3,7 +3,6 @@ name: Create Tag on Master Merge
 on:
   push:
     branches:
-      - master
       - main
 
 permissions:
