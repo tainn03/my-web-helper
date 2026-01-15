@@ -3,9 +3,11 @@ import OpenAI from 'openai';
 
 export interface Message {
     id: string;
-    role: 'user' | 'assistant' | 'system';
+    role: 'user' | 'assistant' | 'system' | 'tool';
     content: string;
     timestamp: Date;
+    toolName?: string; // Tên tool đang được gọi
+    toolArgs?: any; // Arguments của tool call
 }
 
 export interface Tool {
@@ -25,7 +27,7 @@ interface UseOpenAIChatOptions {
 export function useOpenAIChat({
     apiKey,
     systemPrompt = 'You are a helpful assistant.',
-    model = 'gpt-4o-mini',
+    model = 'gpt-5-mini',
     tools = [],
 }: UseOpenAIChatOptions) {
     const [messages, setMessages] = useState<Message[]>([]);
@@ -37,7 +39,11 @@ export function useOpenAIChat({
         if (apiKey) {
             clientRef.current = new OpenAI({
                 apiKey,
+                baseURL: 'https://genai-gateway.flava-cloud.com/v1', // Internal GenAI Gateway proxy
                 dangerouslyAllowBrowser: true, // Required for client-side usage
+                defaultHeaders: {
+                    'X-Title': 'my-web-helper-extension', // Application identifier
+                },
             });
         }
     }, [apiKey]);
@@ -71,7 +77,12 @@ export function useOpenAIChat({
         try {
             const conversationMessages = [
                 { role: 'system' as const, content: systemPrompt },
-                ...messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+                ...messages
+                    .filter((m) => m.role !== 'tool') // Không gửi tool messages (chỉ dùng để hiển thị)
+                    .map((m) => ({
+                        role: m.role as 'user' | 'assistant' | 'system',
+                        content: m.content,
+                    })),
                 { role: 'user' as const, content },
             ];
 
@@ -88,15 +99,36 @@ export function useOpenAIChat({
 
             // Handle tool calls
             while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+                if (assistantMessage.content) {
+                    const assistantMsg: Message = {
+                        id: crypto.randomUUID(),
+                        role: 'assistant',
+                        content: assistantMessage.content,
+                        timestamp: new Date(),
+                    };
+                    setMessages((prev) => [...prev, assistantMsg]);
+                }
+
                 const toolResults: Array<{ role: 'tool'; tool_call_id: string; content: string }> = [];
 
                 for (const toolCall of assistantMessage.tool_calls) {
-                    // Check if it's a function tool call
                     if (toolCall.type === 'function') {
                         const tool = tools.find((t) => t.name === toolCall.function.name);
                         if (tool) {
                             try {
                                 const args = JSON.parse(toolCall.function.arguments);
+
+                                // Hiển thị tool call lên UI
+                                const toolMessage: Message = {
+                                    id: crypto.randomUUID(),
+                                    role: 'tool',
+                                    content: `🔧 ${tool.description}`,
+                                    timestamp: new Date(),
+                                    toolName: tool.name,
+                                    toolArgs: args,
+                                };
+                                setMessages((prev) => [...prev, toolMessage]);
+
                                 const result = await tool.handler(args);
                                 toolResults.push({
                                     role: 'tool',
@@ -114,17 +146,18 @@ export function useOpenAIChat({
                     }
                 }
 
-                // Continue conversation with tool results
+                // Tiếp tục conversation với tool results
                 response = await clientRef.current.chat.completions.create({
                     model,
                     messages: [
-                        ...conversationMessages,
-                        assistantMessage,
+                        { role: 'system' as const, content: systemPrompt },
+                        ...conversationMessages.filter((m) => m.role !== 'system'),
+                        { role: 'assistant' as const, content: assistantMessage.content || '', tool_calls: assistantMessage.tool_calls },
                         ...toolResults,
                     ],
                     tools: openaiTools,
                     tool_choice: 'auto',
-                });
+                } as any);
 
                 assistantMessage = response.choices[0].message;
             }

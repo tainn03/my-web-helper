@@ -80,7 +80,24 @@
   box-sizing: border-box;
 }
 
+.input-group select {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  background: white;
+  cursor: pointer;
+}
+
 .input-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.input-group select:focus {
   outline: none;
   border-color: #3b82f6;
 }
@@ -288,6 +305,118 @@
   border-bottom-left-radius: 4px;
 }
 
+.message.tool .message-text {
+  background: #fff7ed;
+  color: #92400e;
+  border-bottom-left-radius: 4px;
+  font-size: 13px;
+  border-left: 3px solid #f59e0b;
+}
+
+/* Markdown Styling */
+.message-text p {
+  margin: 0 0 8px 0;
+}
+
+.message-text p:last-child {
+  margin: 0;
+}
+
+.message-text ul,
+.message-text ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.message-text li {
+  margin: 4px 0;
+}
+
+.message-text code {
+  background: rgba(0, 0, 0, 0.05);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+}
+
+.message.user .message-text code {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.message-text pre {
+  margin: 8px 0;
+  padding: 12px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.message-text pre code {
+  background: transparent;
+  padding: 0;
+  color: #d4d4d4;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.message-text blockquote {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+  font-style: italic;
+}
+
+.message-text a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.message-text table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 13px;
+}
+
+.message-text th,
+.message-text td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+.message-text th {
+  background: #f3f4f6;
+  font-weight: 600;
+}
+
+.message-text h1,
+.message-text h2,
+.message-text h3,
+.message-text h4 {
+  margin: 12px 0 8px 0;
+  font-weight: 600;
+}
+
+.message-text h1 {
+  font-size: 1.4em;
+}
+
+.message-text h2 {
+  font-size: 1.3em;
+}
+
+.message-text h3 {
+  font-size: 1.2em;
+}
+
+.message-text h4 {
+  font-size: 1.1em;
+}
+
 .message-time {
   font-size: 11px;
   color: #9ca3af;
@@ -446,6 +575,23 @@
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.primary-btn:hover {
+  background: #2563eb;
 }
 
 .danger-btn:hover {
