@@ -21,180 +21,95 @@ function sendToContentScript(message: any): Promise<any> {
 
 export function createDomTools(): Tool[] {
     return [
+        // ===== DEBUGGING TOOLS =====
         {
-            name: 'getPageInfo',
-            description: 'Lấy thông tin tổng quan trang web hiện tại: title, url, số elements, số input, meta description...',
+            name: 'take_snapshot',
+            description: 'Lấy snapshot text của trang hiện tại (title, URL, số elements, danh sách links chính). Luôn dùng tool này trước để hiểu cấu trúc trang.',
             parameters: {
                 type: 'object',
-                properties: {},
+                properties: {
+                    verbose: {
+                        type: 'boolean',
+                        description: 'Bao gồm thêm thông tin chi tiết (mặc định: false)',
+                    },
+                },
                 required: [],
             },
-            handler: async () => {
-                return await sendToContentScript({ action: 'getPageInfo' });
+            handler: async ({ verbose = false }: { verbose?: boolean }) => {
+                return await sendToContentScript({ action: 'take_snapshot', verbose });
             },
         },
         {
-            name: 'extractText',
-            description: 'Trích xuất text từ một selector CSS trên trang',
+            name: 'evaluate_script',
+            description: 'Chạy JavaScript function trong trang web và trả về kết quả dạng JSON',
+            parameters: {
+                type: 'object',
+                properties: {
+                    function: {
+                        type: 'string',
+                        description: 'JavaScript function để thực thi. Ví dụ: "() => { return document.title }" hoặc "(selector) => { return document.querySelector(selector)?.innerText }"',
+                    },
+                    args: {
+                        type: 'array',
+                        description: 'Mảng arguments để truyền vào function',
+                        items: {},
+                    },
+                },
+                required: ['function'],
+            },
+            handler: async ({ function: func, args = [] }: { function: string; args?: any[] }) => {
+                return await sendToContentScript({ action: 'evaluate_script', function: func, args });
+            },
+        },
+
+        // ===== INPUT AUTOMATION TOOLS =====
+        {
+            name: 'click',
+            description: 'Click vào element theo CSS selector',
             parameters: {
                 type: 'object',
                 properties: {
                     selector: {
                         type: 'string',
-                        description: "CSS selector, ví dụ: 'h1', '.product-price', '#main-content', 'p'",
+                        description: 'CSS selector của element cần click',
+                    },
+                    dblClick: {
+                        type: 'boolean',
+                        description: 'Double click thay vì single click (mặc định: false)',
                     },
                 },
                 required: ['selector'],
             },
-            handler: async ({ selector }: { selector: string }) => {
-                const res = await sendToContentScript({ action: 'extractText', selector });
-                return res?.text || 'Không tìm thấy element với selector này';
+            handler: async ({ selector, dblClick = false }: { selector: string; dblClick?: boolean }) => {
+                const res = await sendToContentScript({ action: 'click', selector, dblClick });
+                return res?.success ? 'Đã click thành công' : res?.error || 'Không tìm thấy element';
             },
         },
         {
-            name: 'extractAllTexts',
-            description: 'Trích xuất tất cả texts từ các elements matching selector CSS',
+            name: 'fill',
+            description: 'Điền text vào input, textarea hoặc select option',
             parameters: {
                 type: 'object',
                 properties: {
                     selector: {
                         type: 'string',
-                        description: "CSS selector để match nhiều elements, ví dụ: 'li', '.item', 'h2'",
-                    },
-                    limit: {
-                        type: 'number',
-                        description: 'Số lượng tối đa elements cần lấy (mặc định 10)',
-                    },
-                },
-                required: ['selector'],
-            },
-            handler: async ({ selector, limit = 10 }: { selector: string; limit?: number }) => {
-                return await sendToContentScript({ action: 'extractAllTexts', selector, limit });
-            },
-        },
-        {
-            name: 'clickElement',
-            description: 'Click vào element theo selector (button, link, v.v.)',
-            parameters: {
-                type: 'object',
-                properties: {
-                    selector: {
-                        type: 'string',
-                        description: "CSS selector của element cần click, ví dụ: 'button.submit', '#login-btn'",
-                    },
-                },
-                required: ['selector'],
-            },
-            handler: async ({ selector }: { selector: string }) => {
-                const res = await sendToContentScript({ action: 'click', selector });
-                return res?.success ? 'Đã click thành công' : 'Không tìm thấy element để click';
-            },
-        },
-        {
-            name: 'fillInput',
-            description: 'Điền giá trị vào input hoặc textarea',
-            parameters: {
-                type: 'object',
-                properties: {
-                    selector: {
-                        type: 'string',
-                        description: "CSS selector của input/textarea, ví dụ: 'input[name=\"email\"]', '#password'",
+                        description: 'CSS selector của input/textarea/select',
                     },
                     value: {
                         type: 'string',
-                        description: 'Giá trị cần điền vào',
+                        description: 'Giá trị cần điền',
                     },
                 },
                 required: ['selector', 'value'],
             },
             handler: async ({ selector, value }: { selector: string; value: string }) => {
                 const res = await sendToContentScript({ action: 'fill', selector, value });
-                return res?.success ? 'Đã điền giá trị thành công' : 'Không tìm thấy input để điền';
+                return res?.success ? 'Đã điền giá trị thành công' : res?.error || 'Không tìm thấy element';
             },
         },
         {
-            name: 'getInputValue',
-            description: 'Lấy giá trị hiện tại của input/textarea/select',
-            parameters: {
-                type: 'object',
-                properties: {
-                    selector: {
-                        type: 'string',
-                        description: "CSS selector của input, ví dụ: 'input[name=\"email\"]'",
-                    },
-                },
-                required: ['selector'],
-            },
-            handler: async ({ selector }: { selector: string }) => {
-                const res = await sendToContentScript({ action: 'getInputValue', selector });
-                return res?.found ? res.value : 'Không tìm thấy input';
-            },
-        },
-        {
-            name: 'scrollPage',
-            description: 'Scroll trang web lên, xuống hoặc đến element cụ thể',
-            parameters: {
-                type: 'object',
-                properties: {
-                    direction: {
-                        type: 'string',
-                        enum: ['up', 'down', 'top', 'bottom', 'to-element'],
-                        description: "'up', 'down', 'top', 'bottom' hoặc 'to-element'",
-                    },
-                    selector: {
-                        type: 'string',
-                        description: "CSS selector nếu direction là 'to-element'",
-                    },
-                },
-                required: ['direction'],
-            },
-            handler: async ({ direction, selector }: { direction: string; selector?: string }) => {
-                const res = await sendToContentScript({ action: 'scroll', direction, selector });
-                return res?.success ? 'Đã scroll thành công' : 'Không thể scroll';
-            },
-        },
-        {
-            name: 'highlightElement',
-            description: 'Highlight (đánh dấu) element trên trang để người dùng dễ thấy',
-            parameters: {
-                type: 'object',
-                properties: {
-                    selector: {
-                        type: 'string',
-                        description: 'CSS selector của element cần highlight',
-                    },
-                    color: {
-                        type: 'string',
-                        description: "Màu viền highlight (mặc định: 'red')",
-                    },
-                },
-                required: ['selector'],
-            },
-            handler: async ({ selector, color = 'red' }: { selector: string; color?: string }) => {
-                const res = await sendToContentScript({ action: 'highlight', selector, color });
-                return res?.success ? 'Đã highlight element' : 'Không tìm thấy element';
-            },
-        },
-        {
-            name: 'getAllLinks',
-            description: 'Lấy danh sách tất cả links (href và text) trên trang',
-            parameters: {
-                type: 'object',
-                properties: {
-                    limit: {
-                        type: 'number',
-                        description: 'Số lượng links tối đa cần lấy (mặc định 20)',
-                    },
-                },
-                required: [],
-            },
-            handler: async ({ limit = 20 }: { limit?: number }) => {
-                return await sendToContentScript({ action: 'getAllLinks', limit });
-            },
-        },
-        {
-            name: 'getElementHtml',
-            description: 'Lấy HTML của element theo selector',
+            name: 'hover',
+            description: 'Hover (di chuột) lên element',
             parameters: {
                 type: 'object',
                 properties: {
@@ -202,16 +117,102 @@ export function createDomTools(): Tool[] {
                         type: 'string',
                         description: 'CSS selector của element',
                     },
-                    outerHtml: {
-                        type: 'boolean',
-                        description: 'Lấy outerHTML (bao gồm cả tag element) hay chỉ innerHTML (mặc định: false)',
+                },
+                required: ['selector'],
+            },
+            handler: async ({ selector }: { selector: string }) => {
+                const res = await sendToContentScript({ action: 'hover', selector });
+                return res?.success ? 'Đã hover thành công' : res?.error || 'Không tìm thấy element';
+            },
+        },
+        {
+            name: 'press_key',
+            description: 'Nhấn phím hoặc tổ hợp phím (keyboard shortcuts)',
+            parameters: {
+                type: 'object',
+                properties: {
+                    key: {
+                        type: 'string',
+                        description: 'Phím hoặc tổ hợp phím. Ví dụ: "Enter", "Control+A", "Control+Shift+R"',
+                    },
+                },
+                required: ['key'],
+            },
+            handler: async ({ key }: { key: string }) => {
+                const res = await sendToContentScript({ action: 'press_key', key });
+                return res?.success ? `Đã nhấn phím: ${key}` : res?.error || 'Không thể nhấn phím';
+            },
+        },
+
+        // ===== NAVIGATION TOOLS =====
+        {
+            name: 'navigate_page',
+            description: 'Điều hướng trang (URL mới, back, forward, reload)',
+            parameters: {
+                type: 'object',
+                properties: {
+                    type: {
+                        type: 'string',
+                        enum: ['url', 'back', 'forward', 'reload'],
+                        description: 'Loại điều hướng',
+                    },
+                    url: {
+                        type: 'string',
+                        description: 'URL đích (chỉ dùng khi type="url")',
+                    },
+                },
+                required: ['type'],
+            },
+            handler: async ({ type, url }: { type: string; url?: string }) => {
+                const res = await sendToContentScript({ action: 'navigate_page', type, url });
+                return res?.success ? 'Đã điều hướng thành công' : res?.error || 'Không thể điều hướng';
+            },
+        },
+
+        // ===== UTILITY TOOLS =====
+        {
+            name: 'scroll_page',
+            description: 'Scroll trang (up, down, top, bottom, hoặc đến element)',
+            parameters: {
+                type: 'object',
+                properties: {
+                    direction: {
+                        type: 'string',
+                        enum: ['up', 'down', 'top', 'bottom', 'to-element'],
+                        description: 'Hướng scroll',
+                    },
+                    selector: {
+                        type: 'string',
+                        description: 'CSS selector (chỉ dùng khi direction="to-element")',
+                    },
+                },
+                required: ['direction'],
+            },
+            handler: async ({ direction, selector }: { direction: string; selector?: string }) => {
+                const res = await sendToContentScript({ action: 'scroll', direction, selector });
+                return res?.success ? 'Đã scroll thành công' : res?.error || 'Không thể scroll';
+            },
+        },
+        {
+            name: 'highlight_element',
+            description: 'Highlight (đánh dấu màu) element để dễ nhận diện',
+            parameters: {
+                type: 'object',
+                properties: {
+                    selector: {
+                        type: 'string',
+                        description: 'CSS selector của element',
+                    },
+                    color: {
+                        type: 'string',
+                        description: 'Màu highlight (mặc định: "red")',
                     },
                 },
                 required: ['selector'],
             },
-            handler: async ({ selector, outerHtml = false }: { selector: string; outerHtml?: boolean }) => {
-                const res = await sendToContentScript({ action: 'getHtml', selector, outerHtml });
-                return res?.found ? res.html : 'Không tìm thấy element';
+            handler: async ({ selector, color = 'red' }: { selector: string; color?: string }) => {
+                const res = await sendToContentScript({ action: 'highlight', selector, color });
+                return res?.success ? 'Đã highlight element' : res?.error || 'Không tìm thấy element';
             },
         },
     ];

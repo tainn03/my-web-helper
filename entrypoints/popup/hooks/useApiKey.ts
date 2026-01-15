@@ -7,19 +7,29 @@ interface UseApiKeyReturn {
     saveApiKey: () => Promise<void>;
     clearApiKey: () => Promise<void>;
     isLoading: boolean;
+    model: string;
+    setModel: (model: string) => void;
+    savedModel: string;
+    saveModel: () => Promise<void>;
 }
 
 export function useApiKey(): UseApiKeyReturn {
     const [apiKey, setApiKey] = useState<string>('');
     const [savedKey, setSavedKey] = useState<string | null>(null);
+    const [model, setModel] = useState<string>('gpt-5-mini');
+    const [savedModel, setSavedModel] = useState<string>('gpt-5-mini');
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        // Load API key từ chrome.storage khi mount
-        chrome.storage.local.get(['openaiApiKey'], (result) => {
-            if (result.openaiApiKey && typeof result.openaiApiKey === 'string') {
-                setSavedKey(result.openaiApiKey);
-                setApiKey(result.openaiApiKey);
+        // Load API key và model từ chrome.storage khi mount
+        chrome.storage.local.get(['internalApiKey', 'selectedModel'], (result) => {
+            if (result.internalApiKey && typeof result.internalApiKey === 'string') {
+                setSavedKey(result.internalApiKey);
+                setApiKey(result.internalApiKey);
+            }
+            if (result.selectedModel && typeof result.selectedModel === 'string') {
+                setSavedModel(result.selectedModel);
+                setModel(result.selectedModel);
             }
             setIsLoading(false);
         });
@@ -31,12 +41,29 @@ export function useApiKey(): UseApiKeyReturn {
                 reject(new Error('API Key không được để trống'));
                 return;
             }
-            chrome.storage.local.set({ openaiApiKey: apiKey.trim() }, () => {
+            chrome.storage.local.set({ 
+                internalApiKey: apiKey.trim(),
+                selectedModel: model 
+            }, () => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
                     return;
                 }
                 setSavedKey(apiKey.trim());
+                setSavedModel(model);
+                resolve();
+            });
+        });
+    };
+
+    const saveModel = async (): Promise<void> => {
+        return new Promise((resolve, reject) => {
+            chrome.storage.local.set({ selectedModel: model }, () => {
+                if (chrome.runtime.lastError) {
+                    reject(new Error(chrome.runtime.lastError.message));
+                    return;
+                }
+                setSavedModel(model);
                 resolve();
             });
         });
@@ -44,7 +71,7 @@ export function useApiKey(): UseApiKeyReturn {
 
     const clearApiKey = async (): Promise<void> => {
         return new Promise((resolve, reject) => {
-            chrome.storage.local.remove(['openaiApiKey'], () => {
+            chrome.storage.local.remove(['internalApiKey'], () => {
                 if (chrome.runtime.lastError) {
                     reject(new Error(chrome.runtime.lastError.message));
                     return;
@@ -63,5 +90,9 @@ export function useApiKey(): UseApiKeyReturn {
         saveApiKey,
         clearApiKey,
         isLoading,
+        model,
+        setModel,
+        savedModel,
+        saveModel,
     };
 }

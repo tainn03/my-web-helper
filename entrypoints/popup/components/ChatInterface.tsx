@@ -1,32 +1,42 @@
 import { useState, useRef, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github-dark.css";
 import { useOpenAIChat } from "../hooks/useOpenAIChat";
 import { createDomTools } from "../hooks/domTools";
 
 interface ChatInterfaceProps {
   apiKey: string;
+  model: string;
   onSettingsClick?: () => void;
 }
 
 const SYSTEM_PROMPT = `Bạn là trợ lý AI thông minh giúp người dùng tương tác với trang web hiện tại.
+Bạn có các công cụ Chrome DevTools MCP để:
 
-Khả năng của bạn:
-- Đọc thông tin trang web (title, URL, metadata, số lượng elements)
-- Trích xuất text từ bất kỳ phần nào của trang
-- Click vào buttons, links
-- Điền form (nhập text vào input/textarea)
-- Scroll trang web
-- Highlight elements để người dùng dễ thấy
-- Lấy danh sách links trên trang
-- Lấy HTML của elements
+**Debugging & Analysis:**
+- take_snapshot: Lấy thông tin tổng quan trang (LUÔN GỌI ĐẦU TIÊN)
+- evaluate_script: Chạy JavaScript trong trang
+
+**Input Automation:**
+- click: Click element (hỗ trợ double-click)
+- fill: Điền text vào input/textarea/select
+- hover: Hover lên element
+- press_key: Nhấn phím/tổ hợp phím (Enter, Control+A...)
+
+**Navigation:**
+- navigate_page: Điều hướng (URL, back, forward, reload)
+- scroll_page: Scroll trang
+- highlight_element: Đánh dấu element
 
 Quy tắc:
-1. Luôn sử dụng tools khi cần tương tác với trang web
-2. Trả lời bằng tiếng Việt nếu người dùng hỏi bằng tiếng Việt
-3. Giải thích rõ ràng những gì bạn đang làm
-4. Nếu không tìm thấy element, hãy gợi ý selector khác
-5. Cảnh báo trước khi thực hiện các thao tác có thể thay đổi dữ liệu (submit form, click delete...)`;
-
-export function ChatInterface({ apiKey, onSettingsClick }: ChatInterfaceProps) {
+1. Lập kế hoạch trước khi hành động
+2. Gọi take_snapshot đầu tiên để hiểu cấu trúc trang
+3. Sử dụng evaluate_script cho các truy vấn phức tạp
+4. Early return ngay khi có thể
+5. Cảnh báo trước khi thay đổi dữ liệu (submit form, xóa...)`;
+export function ChatInterface({ apiKey, model, onSettingsClick }: ChatInterfaceProps) {
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +46,7 @@ export function ChatInterface({ apiKey, onSettingsClick }: ChatInterfaceProps) {
     useOpenAIChat({
       apiKey,
       systemPrompt: SYSTEM_PROMPT,
-      model: "gpt-4o-mini",
+      model,
       tools: domTools,
     });
 
@@ -122,7 +132,47 @@ export function ChatInterface({ apiKey, onSettingsClick }: ChatInterfaceProps) {
               {message.role === "user" ? "👤" : "🤖"}
             </div>
             <div className="message-content">
-              <div className="message-text">{message.content}</div>
+              <div className="message-text">
+                {message.role === "assistant" ? (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeHighlight]}
+                    components={{
+                      code({ node, className, children, ...props }) {
+                        return (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                ) : message.role === "tool" ? (
+                  <div>
+                      <ReactMarkdown>{message.toolName}</ReactMarkdown>
+                    {message.toolArgs && (
+                      <details style={{ marginTop: '5px', fontSize: '0.85em', opacity: 0.7 }}>
+                        <summary style={{ cursor: 'pointer' }}>Chi tiết</summary>
+                        <pre style={{ 
+                          background: '#f5f5f5', 
+                          padding: '8px', 
+                          borderRadius: '4px',
+                          fontSize: '0.9em',
+                          overflow: 'auto',
+                          // maxHeight: '150px'
+                          maxWidth: '300px'
+                        }}>
+{JSON.stringify(message.toolArgs, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                ) : (
+                  message.content
+                )}
+              </div>
               <div className="message-time">
                 {message.timestamp.toLocaleTimeString("vi-VN", {
                   hour: "2-digit",
